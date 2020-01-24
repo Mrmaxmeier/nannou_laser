@@ -21,13 +21,13 @@ pub struct Stream<M> {
 
 // State associated with the frame stream shared between the handle and laser stream.
 #[derive(Clone)]
-struct State {
-    frame_hz: u32,
-    interpolation_conf: opt::InterpolationConfig,
+pub struct State {
+    pub frame_hz: u32,
+    pub interpolation_conf: opt::InterpolationConfig,
 }
 
 // Updates for the interpolation config sent from the stream handle to the laser thread.
-type StateUpdate = Box<FnMut(&mut State) + 'static + Send>;
+type StateUpdate = Box<dyn FnMut(&mut State) + 'static + Send>;
 
 /// A wrapper around the `Vec` of points being collected for the frame.
 ///
@@ -42,9 +42,9 @@ pub struct Frame {
 }
 
 // A type used for requesting frames from the user and feeding them to the raw buffer.
-struct Requester {
-    last_frame_point: Option<RawPoint>,
-    raw_points: Vec<RawPoint>,
+pub struct Requester {
+    pub last_frame_point: Option<RawPoint>,
+    pub raw_points: Vec<RawPoint>,
 }
 
 // The type of the default function used for the `process_raw` function if none is specified.
@@ -317,7 +317,7 @@ impl Frame {
 impl Requester {
     // Fill the given buffer by requesting frames from the given user `render` function as
     // required.
-    fn fill_buffer<M, F>(
+    pub fn fill_buffer<M, F>(
         &mut self,
         model: &mut M,
         render: F,

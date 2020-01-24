@@ -57,10 +57,10 @@ pub struct Builder<M, F> {
 }
 
 // The type used for sending state updates from the stream handle thread to the laser thread.
-type StateUpdate = Box<FnMut(&mut State) + 'static + Send>;
+type StateUpdate = Box<dyn FnMut(&mut State) + 'static + Send>;
 
 /// The type used for sending model updates from the stream handle thread to the laser thread.
-pub type ModelUpdate<M> = Box<FnMut(&mut M) + 'static + Send>;
+pub type ModelUpdate<M> = Box<dyn FnMut(&mut M) + 'static + Send>;
 
 /// Errors that may occur while running a laser stream.
 #[derive(Debug, Fail, From)]
@@ -198,6 +198,14 @@ impl<M> Stream<M> {
 }
 
 impl Buffer {
+    pub fn new(point_hz: u32, latency_points: u32, n_points: usize) -> Self {
+        Buffer {
+            point_hz,
+            latency_points: latency_points as _,
+            points: vec![RawPoint::centered_blank(); n_points].into_boxed_slice(),
+        }
+    }
+
     /// The rate at which these points will be emitted by the DAC.
     pub fn point_hz(&self) -> u32 {
         self.point_hz
@@ -482,11 +490,7 @@ where
         let n_points = points_to_generate(stream.dac(), latency_points as u16) as usize;
 
         // The buffer that the user will write to. TODO: Re-use this points buffer.
-        let mut buffer = Buffer {
-            point_hz,
-            latency_points: latency_points as _,
-            points: vec![RawPoint::centered_blank(); n_points].into_boxed_slice(),
-        };
+        let mut buffer = Buffer::new(point_hz, latency_points, n_points);
 
         // Request the points from the user.
         if let Ok(mut guard) = model.lock() {
